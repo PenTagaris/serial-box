@@ -1,0 +1,483 @@
+﻿"""This file and all files distributed with this program are distributed under
+
+the GPLv2. For More Information, see COPYING in the root directory"""
+
+
+
+"""This file defines the methods by which we get things like interval vectors and 
+
+Best Normal Order (Prime Form)"""
+
+
+# a pound symbol, like the one at the beginning of this line, means that what #follows is not read by the program.
+
+
+def printPrimeForm (pitches):
+
+
+
+    PrimeForm = getPrimeForm(pitches)        
+
+    printPF = "["
+
+    for i in range(len(PrimeForm)):
+
+        printPF = printPF + " " + str(PrimeForm[i])
+
+    
+
+    printPF = printPF + " ]"
+
+    return printPF
+
+
+
+def printPrimeFormInversion(pitches):
+
+
+
+    PrimeForm = Invertify(getPrimeForm(pitches))
+
+    printPF = "["
+
+    for i in range(len(PrimeForm)):
+
+        printPF = printPF + " " + str(PrimeForm[i])
+
+    
+
+    printPF = printPF + " ]"
+
+    return printPF
+
+
+
+def printIntervalVector (pitches):
+
+    
+
+    IntervalVector = findIntervalVector(pitches)
+
+    printIV = "<"
+
+    for i in range(len(IntervalVector)):
+
+        printIV = printIV + " " + str(IntervalVector[i])
+
+
+
+    printIV = printIV + " >"
+
+    return printIV
+
+
+
+def findIntervalVector(pitchList):
+
+	
+
+    pitchList.sort()
+
+    
+
+    #this will be one of the only hardcoded things in this program, since 
+
+    #an interval vector always has 6 items, though some of them might be 0
+
+    intervalVector = [0, 0, 0, 0, 0, 0]
+
+
+
+    for i in range(len(pitchList)):
+
+	for j in range(i+1, len(pitchList)): 
+
+            interval = (pitchList[j] - pitchList[i])
+
+            if (interval == 1) or (interval == 11):
+
+	        intervalVector[0] = intervalVector[0] + 1
+
+	    elif (interval == 2) or (interval == 10):
+
+	        intervalVector[1] = intervalVector[1] + 1
+
+	    elif (interval == 3) or (interval == 9):
+
+                intervalVector[2] = intervalVector[2] + 1
+
+	    elif (interval == 4) or (interval == 8):
+
+	        intervalVector[3] = intervalVector[3] + 1
+
+	    elif (interval == 5) or (interval == 7):
+
+	        intervalVector[4] = intervalVector[4] + 1
+
+	    elif interval == 6:
+
+	        intervalVector[5] = intervalVector[5] + 1
+
+	
+
+    return intervalVector
+
+
+
+def findGreatestInterval(pitches):
+
+	
+
+    bigInterval = 0
+
+    bigIntervalLoc = []
+
+
+
+    #Do this by the book
+
+    pitchCopy = pitches[:]
+
+
+
+    #First, line the pitches up in ascending order
+
+    pitchCopy.append(pitches[0] + 12)
+
+
+
+    #next, go through and find the greatest interval
+
+    #in this case, i is the top note, and will be passed back
+
+    for i in range(0, len(pitchCopy)):
+
+	if (pitchCopy[i] - pitchCopy[i-1]) > bigInterval:
+
+        	bigIntervalLoc = []
+
+		bigInterval = (pitchCopy[i] - pitchCopy[i-1])
+
+	    	bigIntervalLoc.append(i)
+
+	elif (pitchCopy[i] - pitchCopy[i-1]) == bigInterval:
+
+		bigIntervalLoc.append(i)
+
+	
+
+    #the above should have found the locations of all the largest intervals 
+
+    #and saved them into bigIntervalLoc
+
+    return bigIntervalLoc
+
+
+
+def orderGreatestIntervals(pitches):
+
+
+
+	#this used to be a permutation scheme, but it'll work all the same
+
+	#we're actually doing less work this time
+
+	
+
+	greatestIntervals = findGreatestInterval(pitches)
+
+	bigIntervalOrders = []
+
+
+
+	pitches.append(pitches.pop(0)+12)
+
+	#starting at the location defined in greatestIntervals, go backwards until we reach 0	
+
+	for j in greatestIntervals:
+
+	    pitchCopy = pitches[:]
+
+	    normSlice = pitches[j-1:] 
+
+	    for i in range(0, j-1):
+
+	    	normSlice.append(pitchCopy.pop(0)+12)	
+
+	    bigIntervalOrders.append(normSlice)
+
+
+
+	return bigIntervalOrders		
+
+
+
+def isSymmetric(pitchSetList):
+
+
+
+    list = pitchSetList[:]
+
+    for i in range(1, len(list[0])):
+
+        intervalVal = (list[0][i] - list[0][i-1])
+
+        for j in range (1, len(list)):
+
+            if (list[j][i] - list[j][i-1]) != intervalVal:
+
+	        return False
+
+	
+
+    return True
+
+
+
+def findNormalOrder(pitches):
+
+
+
+    #Get the list of candidates
+
+    ordBigInvs = orderGreatestIntervals(pitches)
+
+    j = len(ordBigInvs[0])-1
+
+	
+
+    while len(ordBigInvs) > 1:
+
+        if isSymmetric(ordBigInvs):
+
+	    print "Symmetric Sets Found."
+
+	    print "Using the first one."
+
+	    break
+
+        else:
+
+	    bestSmoosh = findBestSmoosh(ordBigInvs, j)
+
+	    for i in range(len(ordBigInvs)-1, -1, -1):
+
+	        if (ordBigInvs[i][j] - ordBigInvs[i][0]) > bestSmoosh:
+
+	            del ordBigInvs[i]
+
+	            break
+
+	    j = j-1	
+
+
+
+    ordBigInvs = ordBigInvs[0]	
+
+    return ordBigInvs
+
+
+
+def findBestSmoosh(listOfList, n):
+
+	
+
+    bestSmoosh = 11
+
+    for i in range(len(listOfList)):
+
+        intervalCheck = (listOfList[i][n] - listOfList[i][0])
+
+        if intervalCheck < bestSmoosh:
+
+            bestSmoosh = intervalCheck
+
+	
+
+    return bestSmoosh
+
+
+
+def findBestNormalOrder(normalOrder):
+
+	
+
+#first, find out how many occurances of the largest interval there are 
+
+	bigIntervals = orderGreatestIntervals(normalOrder[:])
+
+	orderList = []
+
+	orderList.append(normalOrder)
+
+
+
+	#find the various inversions
+
+	for i in range(len(bigIntervals)):
+
+	    orderList.append(Invertify(bigIntervals[i]))
+
+	
+
+        #I think that the lines of code below break things, but am not sure
+
+        #commenting them out for the sake of safety
+
+	#if the lists in bigIntervals are not symmetric
+
+	#if isSymmetric(bigIntervals) == False:
+
+	#	orderList.append(normalOrder)
+
+	#	print "OrderList =", orderList
+
+	
+
+	#if the lists in orderList are symmetric, return the first value
+
+	# as that is the Normal Order
+
+
+
+	if isSymmetric(orderList):
+
+	    orderList = orderList[0]
+
+	    return orderList
+
+	
+
+	j = len(orderList[0])-1
+
+	while len(orderList) > 1:
+
+	    if isSymmetric(orderList):
+
+	        break
+
+
+
+	    bestSmoosh = findBestSmoosh(orderList, j)
+
+	    for i in range(len(orderList)-1, -1, -1):
+
+	        if (orderList[i][j] - orderList[i][0]) > bestSmoosh:
+
+		    del orderList[i]
+
+		    break
+
+	    j = j-1
+
+
+
+	orderList = orderList[0]
+
+	if orderList[0] > 11:
+
+	    for i in range(len(orderList)):
+
+		orderList[i] = orderList[i] - 12
+
+	return orderList
+
+
+
+def Invertify (pitchSet):
+
+	
+
+	#get the intervals
+
+	#the item at intervals[0] should always be 0
+
+	intervals = []	
+
+	inversion = pitchSet[:]
+
+	for i in range(len(pitchSet)-1, 0, -1):
+
+	    intervals.append(inversion[i] - inversion[i-1])
+
+
+
+	#now invert things
+
+	for i in range (1, len(inversion)-1):
+
+	    inversion[i] = inversion[i-1] + intervals[i-1]	
+
+
+
+	return inversion
+
+
+
+def getPrimeForm (pitchList):
+
+
+
+	#make sure things are sorted correctly
+
+	pitchList.sort()
+
+        normalOrder = findNormalOrder(pitchList[:])
+
+        bestNormalOrder = findBestNormalOrder(normalOrder)	
+
+
+
+	#Format things
+
+	PrimeForm = bestNormalOrder[:]
+
+	if PrimeForm[0] > 11:
+
+	    for i in range(len(PrimeForm)):
+
+	        PrimeForm[i] = PrimeForm[i] - 12
+
+
+
+	if PrimeForm[0] > 0:
+
+	    subtractor = PrimeForm[0]
+
+	    for i in range(len(PrimeForm)):
+
+		PrimeForm[i] = (PrimeForm[i] - subtractor)
+
+	
+
+	return PrimeForm
+
+
+
+if __name__ == "__main__":
+
+	copout=["This Whole Dealie Is Rather Complicated, and Might, In Fact",
+
+        "Give Wrong Answers.", 	"It Has Worked For Everything I Have Tried", 
+
+        "But Going Through All Of The Forte", "Lists Is Kind Of Ridiculous For Now."]
+
+
+
+	print copout
+
+	pitches = [0, 1, 4, 6]
+
+	print "Pitch Set =", pitches
+
+	IntervalVector = findIntervalVector(pitches[:])
+
+	PrimeForm = getPrimeForm(pitches[:])
+
+
+
+	print "Interval Vector: ", printIntervalVector(pitches[:]) 
+
+	print "Prime Form: ", printPrimeForm(pitches[:])
+
+	print "Prime Inversion: ", printPrimeFormInversion(pitches[:])
